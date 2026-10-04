@@ -1,14 +1,16 @@
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
+import java.sql.*;
 import java.util.Scanner;
 
 public class ScoreSystem {
+    //获取数据库连接
+    public static Connection getConn() throws Exception{
+        String url = "jdbc:mysql://localhost:3306/lab?useSSL=false&characterEncoding=utf8&serverTimezone=UTC";
+        return DriverManager.getConnection(url,"root","qinghua985");
+    }
+
     public static void main(String[] args) {
         Scanner sc = new Scanner(System.in);
-        ArrayList<Student> list = new ArrayList<>();
 
-        // while循环 菜单一直循环
         while(true){
             System.out.println("====学生成绩管理系统====");
             System.out.println("1.录入成绩");
@@ -22,30 +24,55 @@ public class ScoreSystem {
                 sc.nextLine();
 
                 if(choice == 1){
-                    //录入学生
+                    //录入成绩，写入MySQL
                     System.out.print("请输入姓名：");
                     String name = sc.nextLine();
                     System.out.print("请输入分数：");
                     double score = sc.nextDouble();
                     sc.nextLine();
-                    Student s = new Student(name, score);
-                    list.add(s);
+
+                    Connection conn = getConn();
+                    String sql = "INSERT INTO student(name,score) VALUES (?,?)";
+                    PreparedStatement ps = conn.prepareStatement(sql);
+                    ps.setString(1,name);
+                    ps.setDouble(2,score);
+                    ps.executeUpdate();
+                    ps.close();
+                    conn.close();
                     System.out.println("录入成功！");
                 }else if(choice == 2){
-                    //显示全部
+                    //查询全部学生
                     System.out.println("====全部学生====");
-                    for(int i=0; i < list.size(); i++){
-                        Student stu = list.get(i);
+                    Connection conn = getConn();
+                    String sql = "SELECT name,score FROM student";
+                    PreparedStatement ps = conn.prepareStatement(sql);
+                    ResultSet rs = ps.executeQuery();
+
+                    while(rs.next()){
+                        String name = rs.getString("name");
+                        double score = rs.getDouble("score");
+                        Student stu = new Student(name,score);
                         stu.introduce();
                     }
+                    rs.close();
+                    ps.close();
+                    conn.close();
                 }else if(choice == 3){
-                    //Collections.sort 从高到低排序
-                    Collections.sort(list, new Comparator<Student>() {
-                        @Override
-                        public int compare(Student o1, Student o2) {
-                            return Double.compare(o2.score, o1.score);
-                        }
-                    });
+                    System.out.println("====按分数降序排列====");
+                    Connection conn = getConn();
+                    String sql = "SELECT name,score FROM student ORDER BY score DESC";
+                    PreparedStatement ps = conn.prepareStatement(sql);
+                    ResultSet rs = ps.executeQuery();
+
+                    while(rs.next()){
+                        String name = rs.getString("name");
+                        double score = rs.getDouble("score");
+                        Student stu = new Student(name,score);
+                        stu.introduce();
+                    }
+                    rs.close();
+                    ps.close();
+                    conn.close();
                     System.out.println("排序完成！");
                 }else if(choice == 4){
                     System.out.println("程序结束");
